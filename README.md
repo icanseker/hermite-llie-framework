@@ -34,7 +34,7 @@ Five established low-light enhancement algorithms serve as comparison baselines,
 ## Repository Structure
 
 ```
-hermite-lowlight/
+hermite-llie-framework/
 ├── main.m                            # Main runner — orchestrates all algorithms,
 │                                     # metrics computation, and file output
 ├── README.md                         # This file
