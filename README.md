@@ -911,9 +911,9 @@ optimization_preset = 'high_precision';
 
 | Preset | Phase 1 Grid | Grid Evals | n_cand | NM TolFun/TolX | NM MaxEvals | ~Time/image | Use case |
 |--------|-------------|-----------|--------|----------------|-------------|-------------|----------|
-| `high_precision` | nu=0.015, t=0.05 | ~5000 | 5 | 1e-6 | 1100 | ~6–7 s | Published results |
-| `balanced` | nu=0.030, t=0.08 | ~1500 | 3 | 1e-4 | 400 | ~2–3 s | Development |
-| `fast` | nu=0.100, t=0.20 | ~200 | 1 | 1e-2 | 100 | ~0.3–0.5 s | Real-time / live video |
+| `high_precision` | nu=0.015, t=0.05 | ~5000 | 5 | 1e-6 | 1100 | ~4.95 s | Published results |
+| `balanced` | nu=0.030, t=0.08 | ~1500 | 3 | 1e-4 | 400 | ~1.42 s | Development |
+| `fast` | nu=0.100, t=0.20 | ~200 | 1 | 1e-2 | 100 | ~0.28 s | Real-time / live video |
 
 All results in the paper were produced with `high_precision`. The `balanced` and `fast` presets demonstrate the framework's practical scalability across deployment contexts.
 
@@ -1079,9 +1079,9 @@ All parameters are resolved internally inside `run_hermite.m`. The caller (main.
 
 | Preset | nu_step | t_step | Grid Evals | n_cand | TolFun/TolX | NM MaxEvals | ~Time/image | Use case |
 |--------|---------|--------|-----------|--------|-------------|------------|-------------|----------|
-| **`high_precision`** | 0.015 | 0.05 | ~5000 | 5 | 1e-6 | 1100 | ~6–7 s | Published results |
-| **`balanced`** | 0.030 | 0.08 | ~1500 | 3 | 1e-4 | 400 | ~2–3 s | Development |
-| **`fast`** | 0.100 | 0.20 | ~200 | 1 | 1e-2 | 100 | ~0.3–0.5 s | Real-time / live video |
+| **`high_precision`** | 0.015 | 0.05 | ~5000 | 5 | 1e-6 | 1100 | ~4.95 s | Published results |
+| **`balanced`** | 0.030 | 0.08 | ~1500 | 3 | 1e-4 | 400 | ~1.42 s | Development |
+| **`fast`** | 0.100 | 0.20 | ~200 | 1 | 1e-2 | 100 | ~0.28 s | Real-time / live video |
 
 Switching presets requires changing **one line** in `main.m`:
 
