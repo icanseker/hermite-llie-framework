@@ -1,0 +1,14 @@
+Image: 547.png
+Algorithm: BIMEF
+I_mean: 15.67
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.3315
+CII: 4.5546
+NIQE: 7.2583
+PSNR: 17.1003
+MSE: 1267.7878
+SSIM: 0.7510

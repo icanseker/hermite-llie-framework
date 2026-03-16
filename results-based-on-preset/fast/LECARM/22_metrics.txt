@@ -1,0 +1,14 @@
+Image: 22.png
+Algorithm: LECARM
+I_mean: 19.33
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 7.1280
+CII: 4.3592
+NIQE: 6.9612
+PSNR: 13.6069
+MSE: 2833.9598
+SSIM: 0.6895

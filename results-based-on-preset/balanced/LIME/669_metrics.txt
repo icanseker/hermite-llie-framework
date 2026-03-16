@@ -1,0 +1,14 @@
+Image: 669.png
+Algorithm: LIME
+I_mean: 17.24
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 7.2656
+CII: 7.2672
+NIQE: 4.8028
+PSNR: 22.1827
+MSE: 393.3812
+SSIM: 0.8539

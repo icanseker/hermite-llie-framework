@@ -1,0 +1,14 @@
+Image: 111.png
+Algorithm: BIMEF
+I_mean: 19.61
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.3834
+CII: 3.9626
+NIQE: 8.2044
+PSNR: 10.7302
+MSE: 5496.2177
+SSIM: 0.6953

@@ -1,0 +1,14 @@
+Image: 778.png
+Algorithm: LIME
+I_mean: 7.31
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 7.5954
+CII: 11.6198
+NIQE: 5.1032
+PSNR: 19.0446
+MSE: 810.2535
+SSIM: 0.6775

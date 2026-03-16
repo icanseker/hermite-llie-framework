@@ -1,0 +1,17 @@
+Image: 547.png
+Algorithm: Hermite
+I_mean: 15.67
+Status: PROCESSED
+Optimal_nu: 1.9859
+Optimal_t: 0.2048
+Total_evals: 234
+Preset: fast
+Processing_time_sec: 0.2698
+
+--- Metrics ---
+Entropy: 7.4807
+CII: 9.6276
+NIQE: 4.9741
+PSNR: 13.7034
+MSE: 2771.6392
+SSIM: 0.7669

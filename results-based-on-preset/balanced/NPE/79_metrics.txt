@@ -1,0 +1,14 @@
+Image: 79.png
+Algorithm: NPE
+I_mean: 22.18
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.9095
+CII: 5.8582
+NIQE: 9.2654
+PSNR: 16.7121
+MSE: 1386.3291
+SSIM: 0.6312

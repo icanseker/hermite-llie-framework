@@ -1,0 +1,14 @@
+Image: 23.png
+Algorithm: SSR
+I_mean: 9.28
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.8601
+CII: 15.5927
+NIQE: 8.2221
+PSNR: 13.8458
+MSE: 2682.2294
+SSIM: 0.6356

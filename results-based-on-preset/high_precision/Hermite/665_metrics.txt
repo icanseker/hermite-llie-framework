@@ -1,0 +1,17 @@
+Image: 665.png
+Algorithm: Hermite
+I_mean: 7.57
+Status: PROCESSED
+Optimal_nu: 1.6235
+Optimal_t: 0.6474
+Total_evals: 5462
+Preset: high_precision
+Processing_time_sec: 5.6139
+
+--- Metrics ---
+Entropy: 7.5473
+CII: 19.2131
+NIQE: 3.5186
+PSNR: 16.0088
+MSE: 1630.0386
+SSIM: 0.6583

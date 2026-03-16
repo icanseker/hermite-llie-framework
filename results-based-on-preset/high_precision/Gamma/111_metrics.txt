@@ -1,0 +1,14 @@
+Image: 111.png
+Algorithm: Gamma
+I_mean: 19.61
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.2143
+CII: 4.4435
+NIQE: 7.7690
+PSNR: 11.7431
+MSE: 4352.7828
+SSIM: 0.7418

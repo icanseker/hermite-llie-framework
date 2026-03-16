@@ -1,0 +1,14 @@
+Image: 780.png
+Algorithm: Gamma
+I_mean: 10.89
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.3924
+CII: 5.6094
+NIQE: 8.3258
+PSNR: 22.6899
+MSE: 350.0153
+SSIM: 0.7327

@@ -1,0 +1,14 @@
+Image: 79.png
+Algorithm: EnlightenGAN
+I_mean: 22.18
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 7.1460
+CII: 5.3642
+NIQE: 5.6920
+PSNR: 15.4273
+MSE: 1863.5870
+SSIM: 0.7885

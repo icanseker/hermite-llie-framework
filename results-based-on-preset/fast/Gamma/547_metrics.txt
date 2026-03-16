@@ -1,0 +1,14 @@
+Image: 547.png
+Algorithm: Gamma
+I_mean: 15.67
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.1616
+CII: 5.0628
+NIQE: 6.8529
+PSNR: 18.3790
+MSE: 944.4593
+SSIM: 0.7721

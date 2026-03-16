@@ -1,0 +1,14 @@
+Image: 179.png
+Algorithm: Dong
+I_mean: 20.45
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.8366
+CII: 4.9945
+NIQE: 6.8838
+PSNR: 16.9622
+MSE: 1308.7503
+SSIM: 0.7002

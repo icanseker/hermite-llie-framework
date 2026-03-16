@@ -1,0 +1,14 @@
+Image: 669.png
+Algorithm: Gamma
+I_mean: 17.24
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.1888
+CII: 4.7805
+NIQE: 6.9842
+PSNR: 13.8095
+MSE: 2704.7551
+SSIM: 0.7580

@@ -1,0 +1,14 @@
+Image: 22.png
+Algorithm: HE
+I_mean: 19.33
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 7.8784
+CII: 6.6109
+NIQE: 8.0782
+PSNR: 20.3714
+MSE: 596.9552
+SSIM: 0.6288

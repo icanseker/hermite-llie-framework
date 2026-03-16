@@ -1,0 +1,14 @@
+Image: 780.png
+Algorithm: SSR
+I_mean: 10.89
+Status: PROCESSED
+Optimal_nu: -
+Optimal_t: -
+
+--- Metrics ---
+Entropy: 6.6643
+CII: 11.9173
+NIQE: 8.6262
+PSNR: 11.0543
+MSE: 5100.9763
+SSIM: 0.4919

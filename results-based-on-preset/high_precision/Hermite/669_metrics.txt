@@ -1,0 +1,17 @@
+Image: 669.png
+Algorithm: Hermite
+I_mean: 17.24
+Status: PROCESSED
+Optimal_nu: 0.8267
+Optimal_t: 0.6974
+Total_evals: 5439
+Preset: high_precision
+Processing_time_sec: 5.6222
+
+--- Metrics ---
+Entropy: 7.4347
+CII: 8.9325
+NIQE: 4.2288
+PSNR: 18.2684
+MSE: 968.8107
+SSIM: 0.8382

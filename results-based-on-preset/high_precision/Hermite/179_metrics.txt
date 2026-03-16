@@ -1,0 +1,17 @@
+Image: 179.png
+Algorithm: Hermite
+I_mean: 20.45
+Status: PROCESSED
+Optimal_nu: 1.7360
+Optimal_t: 0.3071
+Total_evals: 5415
+Preset: high_precision
+Processing_time_sec: 4.0188
+
+--- Metrics ---
+Entropy: 7.0148
+CII: 8.3448
+NIQE: 4.4383
+PSNR: 7.9936
+MSE: 10320.9299
+SSIM: 0.5916

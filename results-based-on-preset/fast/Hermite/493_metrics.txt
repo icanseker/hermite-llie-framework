@@ -1,0 +1,17 @@
+Image: 493.png
+Algorithm: Hermite
+I_mean: 6.62
+Status: PROCESSED
+Optimal_nu: 1.7159
+Optimal_t: 0.5963
+Total_evals: 243
+Preset: fast
+Processing_time_sec: 0.2593
+
+--- Metrics ---
+Entropy: 7.2186
+CII: 18.2638
+NIQE: 3.4802
+PSNR: 11.7901
+MSE: 4305.9283
+SSIM: 0.5871

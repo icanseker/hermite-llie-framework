@@ -1,0 +1,17 @@
+Image: 111.png
+Algorithm: Hermite
+I_mean: 19.61
+Status: PROCESSED
+Optimal_nu: 1.6669
+Optimal_t: 0.3780
+Total_evals: 1800
+Preset: balanced
+Processing_time_sec: 1.4887
+
+--- Metrics ---
+Entropy: 7.3120
+CII: 8.8384
+NIQE: 4.1090
+PSNR: 18.5599
+MSE: 905.9278
+SSIM: 0.8753
