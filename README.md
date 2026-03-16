@@ -670,7 +670,7 @@ All metrics are computed in `metrics/` and reported in each `_metrics.txt` outpu
 
 ---
 
-### SSIM — Structural Similarity Index ⭐ Primary Metric
+### SSIM — Structural Similarity Index
 
 **Type:** Full-reference (requires ground truth)  
 **Range:** [−1, 1] — higher is better; 1 = perfect structural similarity  
@@ -794,7 +794,7 @@ Including NIQE alongside SSIM and Entropy provides a more complete picture: an e
 
 | Metric | Type | Range | Best | Requires Reference? | Primary Purpose |
 |--------|------|-------|------|---------------------|----------------|
-| SSIM ⭐ | Full-reference | [−1, 1] | → 1 | Yes | Structural / perceptual fidelity |
+| SSIM | Full-reference | [−1, 1] | → 1 | Yes | Structural / perceptual fidelity |
 | PSNR | Full-reference | [0, ∞) dB | Higher | Yes | Pixel fidelity (log scale) |
 | MSE | Full-reference | [0, ∞) | Lower | Yes | Pixel error magnitude |
 | Entropy | No-reference | [0, 8] bits | Higher | No | Information richness |
