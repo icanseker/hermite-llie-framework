@@ -8,7 +8,7 @@ This repository contains the full MATLAB implementation accompanying the paper:
 
 The proposed method leverages **coefficient bounds derived from bi-univalent Sakaguchi-type analytic functions**, where the subordinating function is expressed in terms of the **classical Hermite polynomial family**. These coefficient bounds are used to construct **8-directional 3×3 spatial convolution kernels**, which are applied to very dark images. The parameters governing the coefficient formulas (ν and t) are not fixed — they are **dynamically optimized per image** using a two-phase strategy: a coarse grid search followed by Nelder-Mead simplex refinement, with Shannon entropy as the optimization criterion.
 
-Five established low-light enhancement algorithms serve as comparison baselines, each representing a fundamentally different algorithmic category. All experiments are conducted on the **LOL (Low-Light) paired dataset**.
+Nine established low-light enhancement algorithms serve as comparison baselines, each representing a fundamentally different algorithmic category. All experiments are conducted on the **LOL (Low-Light) paired dataset**.
 
 ---
 
@@ -174,7 +174,7 @@ All 15 LOL evaluation images are included as defaults in `source/low/` and `sour
 You are not limited to the LOL dataset. You can place **any images** in `source/low/`. The algorithm will process whatever files it finds there:
 
 - If a matching file exists in `source/high/`, full-reference metrics (PSNR, MSE, SSIM) will be computed.
-- If no matching reference exists in `source/high/`, PSNR, MSE, and SSIM will be recorded as `N/A`. Entropy and CII will still be computed (they are no-reference metrics).
+- If no matching reference exists in `source/high/`, PSNR, MSE, and SSIM will be recorded as `N/A`. Entropy, CII, and NIQE will still be computed (they are no-reference metrics).
 - The proposed Hermite method will only apply convolution-based enhancement to images with **I_mean < 64**. Images above this threshold are logged as SKIPPED for the polynomial method (see below).
   - **Why 64?** 64 = 128/2: one exposure stop below the perceptually neutral midpoint (128). This is the standard photographic definition of the low-light boundary. Both the threshold (64) and the +50 brightness offset design derive from the same reference value 128, ensuring internal consistency.
 
@@ -221,7 +221,7 @@ a₁ = 1   (fixed; bi-univalent normalization)
 - The denominator of a₂ must be positive for the coefficient to be real and valid
 
 **Scan range used in experiments:**
-- ν ∈ [0.10, 2.00] (wider range than Bernoulli/Laguerre, reflecting Hermite's broader domain)
+- ν ∈ [0.10, 2.00], reflecting the Hermite polynomial family's broad domain
 - t ∈ [-1.0, 0.9]
 
 ### 8-Directional Convolution Kernels
@@ -273,7 +273,7 @@ where:
   H_edge = [1,1,1; 1,0,1; 1,1,1]      — 8-neighbor sum kernel
 ```
 
-This is an exact algebraic identity. Each of the ~5000 entropy evaluations (high_precision) now requires only two scalar multiplications and one element-wise addition — no `conv2` call inside the loop. The freed computation budget is used for finer grid steps (nu_step=0.015 vs previous 0.05), covering the parameter space ~6× more densely at the same wall-clock time.
+This is an exact algebraic identity. Each of the ~5000 entropy evaluations (high_precision) now requires only two scalar multiplications and one element-wise addition — no `conv2` call inside the loop. The freed computation budget is used for finer grid steps (nu_step=0.015), covering the parameter space ~6× more densely at the same wall-clock time.
 
 ### Dynamic Optimization — Two-Phase Strategy
 
@@ -291,7 +291,7 @@ A uniform grid over the (ν, t) parameter space is evaluated exhaustively:
 
 For each (ν, t) pair:
 1. Compute Hermite coefficients a₂, a₃ — skip if invalid (denominator ≤ 0, non-finite)
-2. Fast evaluation using precomputed spatial components (no conv2 — see below)
+2. Fast evaluation using precomputed spatial components — no conv2 inside the loop (see Spatial Precomputation above)
 3. Compute Shannon entropy of the result
 4. Store (ν, t, entropy) in the results table
 
@@ -343,16 +343,20 @@ STEP 1: BRIGHTNESS GATE
       RETURN  (no enhancement applied)
 
 ─────────────────────────────────────────────────────────────────────
-STEP 2: PHASE 1 — COARSE GRID SEARCH
+STEP 2: SPATIAL PRECOMPUTATION  (once per image, before all loops)
 ─────────────────────────────────────────────────────────────────────
-  // Pre-compute Master Kernel once per (nu, t) — avoids 8 separate convs
-  // K_master = (1/8) * sum(h₁..h₈) — exact algebraic identity (see below)
+  img_d  ← double(I)
+  I_edge ← imfilter(img_d, H_edge)   // H_edge = [1,1,1; 1,0,1; 1,1,1]
+  // I_edge is parameter-independent — computed once, reused ~5000 times
 
+─────────────────────────────────────────────────────────────────────
+STEP 3: PHASE 1 — COARSE GRID SEARCH
+─────────────────────────────────────────────────────────────────────
   Initialize results ← empty table
   for each nu in [0.10 : nu_step : 2.00]:   // nu_step from preset
       for each t in [-1.0 : t_step : 0.9]:  // t_step from preset
 
-          // Compute Hermite coefficient bounds
+          // Compute Hermite coefficient bounds (Theorem 1)
           numer ← 2 · nu³
           denom ← (1 - t) · ((nu² - 2·nu - 1)·t + (nu + 1)²)
           if denom <= 0: SKIP this (nu, t)
@@ -365,38 +369,29 @@ STEP 2: PHASE 1 — COARSE GRID SEARCH
 
           if a2 or a3 is non-positive or non-finite: SKIP
 
-          // Build Master Kernel (a1 = 1 fixed):
-          //   [ 1+a3,  1+a3,  1+a3 ]
-          //   [ 1+a3,  8·a2,  1+a3 ]   ÷ 8
-          //   [ 1+a3,  1+a3,  1+a3 ]
-          K_master ← build_master_kernel(a1=1, a2, a3)
-
-          // Single convolution per channel (Master Kernel: algebraic identity)
-          I_candidate ← apply_master_kernel(I, K_master)  // + brightness offset +50
+          // Fast evaluation — uses precomputed components, no conv2 in loop
+          edge_factor ← (1 + a3) / 8
+          I_candidate ← uint8(clamp(a2 * img_d + edge_factor * I_edge + 50))
           entropy ← shannon_entropy(I_candidate)
 
           Append (nu, t, entropy) to results
 
   Sort results by entropy descending
-  Keep top n_candidates rows as starting_points   // n_candidates from preset
+  Keep top n_candidates rows as starting_points
 
 ─────────────────────────────────────────────────────────────────────
-STEP 3: PHASE 2 — NELDER-MEAD SIMPLEX REFINEMENT
+STEP 4: PHASE 2 — NELDER-MEAD SIMPLEX REFINEMENT
 ─────────────────────────────────────────────────────────────────────
   best_entropy ← -∞
-  best_nu ← starting_points[1].nu
-  best_t  ← starting_points[1].t
 
-  for k = 1 to n_candidates:   // n_candidates from preset
+  for k = 1 to n_candidates:
       x0 ← [starting_points[k].nu, starting_points[k].t]
 
-      // fminsearch minimizes f(x) = -entropy(enhanced(x))
-      // Penalty = 1e6 returned for infeasible (nu, t)
-      // Tolerances and MaxFunEvals from preset (Step 0)
-      [x_opt, f_opt] ← fminsearch( x → -entropy(enhance(I, x)), x0,
-                                   TolFun, TolX, MaxFunEvals )
+      // Objective: fast_neg_entropy(x, img_d, I_edge) — no conv2
+      // Penalty = 1e6 for infeasible (nu, t)
+      [x_opt, f_opt] ← fminsearch(x → fast_neg_entropy(x, img_d, I_edge),
+                                   x0, TolFun, TolX, MaxFunEvals)
 
-      // Clamp to valid range
       x_opt[1] ← clamp(x_opt[1], 0.10, 2.00)   // nu
       x_opt[2] ← clamp(x_opt[2], -1.0, 0.9)    // t
 
@@ -406,57 +401,17 @@ STEP 3: PHASE 2 — NELDER-MEAD SIMPLEX REFINEMENT
           best_t  ← x_opt[2]
 
 ─────────────────────────────────────────────────────────────────────
-STEP 4: PRODUCE FINAL ENHANCED IMAGE
+STEP 5: PRODUCE FINAL ENHANCED IMAGE  (single apply_convolution call)
 ─────────────────────────────────────────────────────────────────────
-  Compute final coefficients from (best_nu, best_t):
-      a2, a3 ← hermite_coefficients(best_nu, best_t)
-
-  K_master ← build_master_kernel(a1=1, a2, a3)
-  I_enh    ← apply_master_kernel(I, K_master)   // + brightness offset +50
-
-─────────────────────────────────────────────────────────────────────
-STEP 5: build_master_kernel(a1, a2, a3)
-─────────────────────────────────────────────────────────────────────
-  // Sum of 8 directional kernels h₁..h₈ (each entry counted by frequency):
-  //   Corners appear in 2 kernels: a1 appears in 4 corners, a3 in 4 corners
-  //   Edges appear in 2 kernels:   a1 appears in 4 edges, a3 in 4 edges
-  //   Center appears in all 8:     a2 × 8
-  //
-  //   Sum = [ a1+a3,  a1+a3,  a1+a3 ]
-  //         [ a1+a3,   8·a2,  a1+a3 ]
-  //         [ a1+a3,  a1+a3,  a1+a3 ]
-  //
-  //   K_master = Sum / 8
-  //
-  //   With a1=1 fixed:
-  //   K_master = [ (1+a3)/8,  (1+a3)/8,  (1+a3)/8 ]
-  //              [ (1+a3)/8,    a2,       (1+a3)/8 ]
-  //              [ (1+a3)/8,  (1+a3)/8,  (1+a3)/8 ]
-  //
-  // This is mathematically identical to 8 separate convolutions then averaging.
-  // Reduces per-iteration convolution count from 8C → C  (C = 3 channels).
-
-  edge ← (a1 + a3) / 8
-  K_master ← [ edge,  edge,  edge  ]
-               [ edge,  a2,    edge  ]
-               [ edge,  edge,  edge  ]
-  RETURN K_master
-
-─────────────────────────────────────────────────────────────────────
-STEP 6: apply_master_kernel(I, K_master)
-─────────────────────────────────────────────────────────────────────
-  for each channel c (R, G, B):
-      out(:,:,c) ← conv2(I(:,:,c), K_master, 'same')
-
-  result ← uint8( clamp(out + 50, [0, 255]) )
-  RETURN result
+  [a2, a3] ← hermite_coefficients(best_nu, best_t)
+  I_enh    ← apply_convolution(I, a2, a3)   // Master Kernel + offset +50
 
 ─────────────────────────────────────────────────────────────────────
 OUTPUT
 ─────────────────────────────────────────────────────────────────────
-  Save I_enh  → target/Hermite/{id}_enhanced.png
-  Save metrics → target/Hermite/{id}_metrics.txt
-      (includes best_nu, best_t, PSNR, MSE, SSIM, Entropy, CII, NIQE)
+  Save I_enh    → target/Hermite/{id}_enhanced.png
+  Save metrics  → target/Hermite/{id}_metrics.txt
+      (includes best_nu, best_t, SSIM, PSNR, MSE, Entropy, CII, NIQE)
 ```
 
 ---
@@ -759,8 +714,8 @@ CII is a simple measure of how much the mean intensity has been lifted by the en
 
 ### NIQE — Natural Image Quality Evaluator
 
-**Type:** No-reference (blind)
-**Range:** [0, ∞) — **lower is better**; lower scores indicate higher perceptual naturalness
+**Type:** No-reference (blind)  
+**Range:** [0, ∞) — **lower is better**; lower scores indicate higher perceptual naturalness  
 **Formula:**
 
 ```
@@ -838,11 +793,14 @@ I_mean: 24.92
 Status: PROCESSED
 Optimal_nu: 1.0499
 Optimal_t: 0.3014
-Total_evals: 1094
+Total_evals: 5426
+Preset: high_precision
+Processing_time_sec: 4.95
 
 --- Metrics ---
 Entropy: 6.9528
 CII: 5.2215
+NIQE: 4.8717
 PSNR: 23.6084
 MSE: 283.2989
 SSIM: 0.8782
@@ -854,6 +812,8 @@ SSIM: 0.8782
 - `Optimal_nu` — best ν found by the two-phase optimization
 - `Optimal_t` — best t found by the two-phase optimization
 - `Total_evals` — total number of entropy evaluations (grid + all Nelder-Mead iterations)
+- `Preset` — preset used for this run
+- `Processing_time_sec` — wall-clock time for optimization + enhancement
 
 ### metrics.txt Format — When No Ground Truth Exists
 
@@ -869,12 +829,13 @@ Total_evals: 873
 --- Metrics ---
 Entropy: 7.1234
 CII: 4.8812
+NIQE: 4.3201
 PSNR: N/A
 MSE: N/A
 SSIM: N/A
 Note: No matching reference image found in source/high/.
       PSNR, MSE, SSIM require a ground truth reference image.
-      Entropy and CII are no-reference metrics and computed above.
+      Entropy, CII, and NIQE are no-reference metrics and computed above.
 ```
 
 ### metrics.txt Format — Skipped Image
@@ -917,7 +878,6 @@ optimization_preset = 'high_precision';
 
 All results in the paper were produced with `high_precision`. The `balanced` and `fast` presets demonstrate the framework's practical scalability across deployment contexts.
 
-
 ---
 
 ## Implementation Details — Master Kernel Formulation
@@ -949,13 +909,9 @@ This reformulation reduces the per-iteration convolution count from **8C to C** 
 
 ---
 
----
-
 ## Mathematical Decoupling: Separating Spatial Cost from Parametric Search
 
-This is not a code refactoring. It is a **mathematical decoupling** — a structural separation
-of the spatial convolution cost from the parametric optimization space, reducing the system's
-time complexity from O(N·W·H·K²) to O(W·H·K²) + O(N·W·H).
+This is not a code refactoring. It is a **mathematical decoupling** — a structural separation of the spatial convolution cost from the parametric optimization space, reducing the system's time complexity from O(N·W·H·K²) to O(W·H·K²) + O(N·W·H).
 
 ### 1. Structural Decomposition of the Master Kernel
 
@@ -967,8 +923,7 @@ K_master = [ e  a₂ e ]    where e = (1 + a₃) / 8
          [ e  e  e ]
 ```
 
-Topologically, this matrix separates into two structurally distinct components —
-a **center (identity)** component and a **surround (edge)** component:
+Topologically, this matrix separates into two structurally distinct components — a **center (identity)** component and a **surround (edge)** component:
 
 ```
          [ 0  0  0 ]       [ 1  1  1 ]
@@ -978,47 +933,24 @@ K_master = a₂ · [ 0  1  0 ]  +  e · [ 1  0  1 ]
        = a₂ · δ  +  e · H_edge
 ```
 
-where **δ** is the Kronecker delta (identity filter) and **H_edge** is the
-8-neighbor ring mask that sums only the surrounding pixels — and crucially, both
-δ and H_edge are **completely parameter-independent static matrices**.
+where **δ** is the Kronecker delta (identity filter) and **H_edge** is the 8-neighbor ring mask — both are completely parameter-independent static matrices.
 
 ### 2. Distributive Property of Convolution
-
-The convolution operator (∗) distributes over addition and scalar multiplication.
-Applying the Master Kernel to image I:
 
 ```
 I_out = I ∗ K_master
       = I ∗ (a₂ · δ  +  e · H_edge)
       = a₂ · (I ∗ δ)  +  e · (I ∗ H_edge)
-```
-
-The critical analytic insight: convolving any matrix with the identity filter δ
-returns the original matrix exactly:
-
-```
-I ∗ δ = I
-```
-
-This eliminates the spatial dimension from the identity term entirely. The equation
-reduces to the following **closed form**:
-
-```
-I_out = a₂ · I  +  e · (I ∗ H_edge)
-      = a₂ · img_d  +  ((1 + a₃) / 8) · I_edge
+      = a₂ · img_d    +  e · I_edge         [since I ∗ δ = I exactly]
 
 where:
-  img_d  = double(I)         — the image itself (identity term, parameter-free)
-  I_edge = I ∗ H_edge        — 8-neighbor sum  (parameter-free, computed once)
+  img_d  = double(I)         — parameter-free, computed once
+  I_edge = I ∗ H_edge        — parameter-free, computed once
 ```
 
+This is an exact algebraic identity — not an approximation.
+
 ### 3. Breaking the Optimization Bottleneck
-
-When `fminsearch` or the grid search iterates over (ν, t) values, only the scalar
-coefficients a₂ and a₃ (and therefore e) change between iterations. The term
-`I ∗ H_edge` is **entirely independent of these coefficients**.
-
-**Architecture — cost separation:**
 
 ```
 Before optimization loop (1 call):
@@ -1028,27 +960,16 @@ Inside optimization loop (~5000 calls in high_precision):
   acc = a2 * img_d + ((1+a3)/8) * I_edge + 50             % O(W·H)  — no conv
 ```
 
-`I_edge` is computed **exactly once**, written to memory, and reused across all
-evaluations. Inside the loop there is no pixel-sliding window, no `imfilter`, no
-`conv2`, no kernel construction. Only two scalar multiplications and one
-element-wise matrix addition.
-
 ### 4. Complexity Analysis
 
 | Component | Cost |
-|---|---|
+|-----------|------|
 | Spatial precomputation (I_edge) | O(W·H·K²) — once before all loops |
 | Loop body per evaluation | O(W·H) — two scalar multiplies + element-wise add |
 | Total complexity | O(W·H·K²) + O(N · W·H) |
 | conv2 calls inside loop | **0** |
 
-For a 3×3 kernel (K²=9): the loop body's spatial factor drops from 9 to 1 — a
-**9× reduction per evaluation** in spatial multiply-accumulate operations.
-
 ### 5. Freed Budget Reinvested into Precision
-
-The computation freed by decoupling is not discarded — it is reinvested into a
-**finer parameter grid**. The same wall-clock time budget now covers:
 
 | Preset | Grid | Points | NM starts |
 |--------|------|--------|-----------|
@@ -1056,26 +977,13 @@ The computation freed by decoupling is not discarded — it is reinvested into a
 | `balanced` | nu=0.030, t=0.08 | ~1500 | 3 |
 | `fast` | nu=0.100, t=0.20 | ~200 | 1 |
 
-A finer grid means a higher probability of seeding Nelder-Mead at a point close
-to the true global entropy maximum — improving the quality of (ν*, t*) without
-adding any wall-clock time.
+The freed computation budget is reinvested into a finer parameter grid. The same wall-clock time now covers ~6× more of the parameter space, seeding Nelder-Mead closer to the true global entropy maximum.
 
-> **Summary:** The mathematical decoupling isolates the O(K²) spatial filtering
-> cost entirely from the O(N) parametric search. Precision is not sacrificed —
-> it is increased. The freed compute budget seeds Nelder-Mead from a 6× denser
-> landscape map. This is the theoretical foundation behind the simultaneous
-> improvement in both speed and parameter-space coverage.
 ---
 
 ## Optimization Presets
 
 A key design feature of this framework is that the **entire optimization pipeline is configurable through a single parameter** in `main.m`. This allows the same algorithm to serve different contexts — from maximum-precision academic benchmarking to real-time deployment — without any structural changes.
-
-The `optimization_preset` string controls **both phases** of the optimization:
-- **Phase 1**: grid step sizes (nu_step, t_step) and number of candidates (n_candidates)
-- **Phase 2**: Nelder-Mead tolerances (TolFun, TolX) and evaluation budget (MaxFunEvals)
-
-All parameters are resolved internally inside `run_hermite.m`. The caller (main.m) only passes the preset name.
 
 | Preset | nu_step | t_step | Grid Evals | n_cand | TolFun/TolX | NM MaxEvals | ~Time/image | Use case |
 |--------|---------|--------|-----------|--------|-------------|------------|-------------|----------|
@@ -1089,55 +997,25 @@ Switching presets requires changing **one line** in `main.m`:
 optimization_preset = 'high_precision';  % Options: 'high_precision' | 'balanced' | 'fast'
 ```
 
-The preset is passed as a string to `run_hermite`, which resolves all parameters:
-
-```matlab
-% run_hermite.m — preset resolution (Phase 1 + Phase 2 together):
-switch lower(preset)
-    case 'high_precision'
-        nu_step=0.015; t_step=0.05; n_candidates=5;
-        nm_TolFun=1e-6;  nm_TolX=1e-6;  nm_MaxFunEvals=1100;
-    case 'balanced'
-        nu_step=0.030; t_step=0.08; n_candidates=3;
-        nm_TolFun=1e-4;  nm_TolX=1e-4;  nm_MaxFunEvals=400;
-    case 'fast'
-        nu_step=0.100; t_step=0.20; n_candidates=1;
-        nm_TolFun=1e-2;  nm_TolX=1e-2;  nm_MaxFunEvals=100;
-end
-```
-
 All results in the paper were produced with `high_precision`. The `balanced` and `fast` presets demonstrate the framework's practical scalability — the same mathematical framework serves both research and real-time deployment contexts.
 
 ---
 
 ## Scalability — High-Resolution Parameter Estimation
 
-The current implementation runs the full two-phase optimization (grid search + Nelder-Mead) on the original image at full resolution. For the LOL dataset (400×600), this is computationally tractable. However, for **high-resolution inputs (4K, 8K, or medical imaging)**, the per-iteration cost scales linearly with pixel count, making full-resolution optimization expensive.
+Since Shannon entropy is a **global statistical measure** (computed from the image histogram, not local spatial structure), the optimal (ν, t) found on a downsampled thumbnail will closely match the optimal found on the full-resolution image.
 
-### Thumbnail-Based Estimation
-
-Since Shannon entropy is a **global statistical measure** (computed from the image histogram, not local spatial structure), the entropy landscape over the (ν, t) parameter space remains consistent across scales. This means the optimal (ν, t) found on a downsampled thumbnail will closely match the optimal found on the full-resolution image.
-
-**Proposed strategy for high-resolution images:**
-
-1. Downsample the input to 1/4 or 1/8 of its original resolution (e.g., `imresize(img, 0.25)`)
-2. Run the full two-phase (ν, t) optimization on the thumbnail
-3. Apply the resulting optimal (ν, t) directly to the full-resolution image
+**Strategy for high-resolution images:**
 
 ```matlab
-% Example: Thumbnail-based optimization for high-resolution inputs
-scale = 0.25;  % 1/4 resolution → 256× fewer pixels per precomputation
+scale = 0.25;  % 1/4 resolution
 img_thumb = imresize(img_low, scale);
 
-% Run optimization on thumbnail — precomputation on thumbnail is 16× cheaper
 [~, best_nu, best_t, ~] = run_hermite(img_thumb, optimization_preset);
 
-% Apply optimal parameters to full-resolution image
 [a2, a3, ~] = hermite_coefficients(best_nu, best_t);
-enhanced_fullres = apply_convolution(img_low, a2, a3);  % Single pass, full resolution
+enhanced_fullres = apply_convolution(img_low, a2, a3);
 ```
-
-**Expected speedup:** Each convolution operation scales linearly with pixel count. At 1/4 scale, each evaluation is ~16× faster. Combined with the Master Kernel formulation, the total optimization speedup for a 4K image approaches **100×** at full resolution.
 
 | Image Resolution | Thumbnail Scale | Optimization Speedup | Final Enhancement |
 |-----------------|-----------------|---------------------|-------------------|
@@ -1145,9 +1023,6 @@ enhanced_fullres = apply_convolution(img_low, a2, a3);  % Single pass, full reso
 | 1920 × 1080 (FHD) | 1/4 | ~16× | Full resolution |
 | 3840 × 2160 (4K) | 1/4 | ~64× | Full resolution |
 | 3840 × 2160 (4K) | 1/8 | ~256× | Full resolution |
-
-> The entropy landscape consistency across scales is an empirical observation supported by the global (histogram-based) nature of Shannon entropy. For images with extreme local tonal variation, a 1/2 scale may be preferable to 1/4 to ensure landscape fidelity.
-
 
 ---
 
@@ -1176,9 +1051,7 @@ enhanced_fullres = apply_convolution(img_low, a2, a3);  % Single pass, full reso
 **BIMEF (Bio-Inspired Multi-Exposure Fusion):**
 > Ying Z., Li G., Gao W. "A Bio-Inspired Multi-Exposure Fusion Framework for Low-light Image Enhancement." *IEEE Transactions on Cybernetics*, 50(6), 2400–2414, 2020.  
 > arXiv: https://arxiv.org/abs/1711.00591  
-> Official source code: https://github.com/baidut/BIMEF (`lowlight/BIMEF.m`)  
-> Official files `BIMEF.m` and `BIMEF.p` copied unchanged from the repo into `algorithms/bimef/`.
-
+> Official source code: https://github.com/baidut/BIMEF
 
 **NIQE (Natural Image Quality Evaluator):**
 > Mittal A., Soundararajan R., Bovik A.C. "Making a 'Completely Blind' Image Quality Analyzer." *IEEE Signal Processing Letters*, 20(3), 209–212, 2013.
@@ -1190,14 +1063,12 @@ enhanced_fullres = apply_convolution(img_low, a2, a3);  % Single pass, full reso
 
 **LECARM (Camera Response Model Enhancement):**
 > Ying Z., Li G., Ren Y., Wang R., Wang W. "A New Image Contrast Enhancement Algorithm Using Exposure Fusion Framework." *Computer Analysis of Images and Patterns (CAIP)*, 2017.  
-> Official code: https://github.com/baidut/LECARM  
-> Official source code used unchanged. Located at `algorithms/lecarm/`.
+> Official code: https://github.com/baidut/LECARM
 
 **EnlightenGAN (Unsupervised Deep Enhancement):**
 > Jiang Y., Gong X., Liu D., Cheng Y., Fang C., Shen X., Yang J., Zhou P., Wang Z. "EnlightenGAN: Deep Light Enhancement without Paired Supervision." *IEEE Transactions on Image Processing*, 30, 2340–2349, 2021.  
 > arXiv: https://arxiv.org/abs/1906.06972  
-> Official code: https://github.com/VITA-Group/EnlightenGAN  
-> Note: ONNX inference via arsenyinfo/EnlightenGAN-inference, called from MATLAB via system(). See `algorithms/enlightengan/`.
+> Official code: https://github.com/VITA-Group/EnlightenGAN
 
 ---
 
