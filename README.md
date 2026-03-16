@@ -116,7 +116,7 @@ To **reproduce the experiments**, simply run `main.m` in MATLAB:
 
 ```matlab
 % In MATLAB command window:
-cd /path/to/hermite-lowlight
+cd /path/to/hermite-llie-framework
 run('main.m')
 ```
 
